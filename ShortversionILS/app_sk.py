@@ -8,9 +8,10 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFECV, f_regression, mutual_info_regression
 from sklearn import neural_network
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score
 from sklearn.tree import DecisionTreeClassifier
-from helpers import seed_everything
+from sklearn.base import ClassifierMixin, RegressorMixin
+from helpers import seed_everything, round_to_class, round_to_value, round_to_dim
 import numpy as np
 
 seed_everything(1337)
@@ -61,15 +62,34 @@ def plot_result(metric_dict, regressorname, filename):
     plt.savefig("plots/{}_efs_{}_.png".format(filename, regressorname), dpi=300)
     plt.close(plot_counter)
 
+# We need a custom scorer in order to compensate the relation between 11 features summed and 5 features summed giving y
+def custom_scorer(estimator: ClassifierMixin | RegressorMixin, x, _y, granularity=1):
+    y = round_to_value(_y)
+    if granularity == 1:
+        y = round_to_dim(round_to_class(y))
+    if granularity == 2:
+        y = round_to_class(y)
+    y_pred = estimator.predict(x)
+    acc = float((y == y_pred).sum()) / y_pred.shape[0]
+    score = estimator.score(x, y) # r2 for regressors and accuracy for classifiers
+    return acc, score
 
 def exhaustive_stepwise_regression(
-    _x, _y, model, filename, cv=2, scoring="neg_root_mean_squared_error"
+    _x, _y, model, filename, cv=2, scoring="neg_root_mean_squared_error", granularity=1
 ):
+    acc = -1
+    score = -1
+    def scorer_wrapper(estimator, x, y):
+        _acc, _score = custom_scorer(estimator, x, y, granularity)
+        acc = _acc
+        score = _score
+        return _acc
+
     efs = EFS(
         model,
         min_features=5,
         max_features=5,
-        scoring=scoring,
+        scoring=scorer_wrapper,
         print_progress=True,
         cv=cv,
         n_jobs=-1,
@@ -88,12 +108,26 @@ def exhaustive_stepwise_regression(
         pprint("####################")
         pprint(efs.best_feature_names_, stream=log_file)
 
-        # Fit the estimator using the new feature subset
-        # and make a prediction on the test data
-        model.fit(_x, _y)
-        y_pred = model.predict(_x)
-        acc = float((_y == y_pred).sum()) / y_pred.shape[0]
-        pprint("Test set accuracy: %.2f %%" % (acc * 100))
+
+        # Select columns in X based on the best feature names:
+        x_bestfeatures = _x[np.array(efs.best_feature_names_)]
+        # Sum up the values of selected features to get new y:
+        y_bf = x_bestfeatures.sum(axis=1)
+        if granularity == 1:
+            y_bf = round_to_dim(round_to_class(round_to_value(y_bf)))
+        if granularity == 2:
+            assert(float((round_to_class(_y) == round_to_class(y_bf)).sum()) / y_bf.shape[0])
+            y_bf = round_to_class(round_to_value(y_bf))
+
+        if granularity == 3:
+            # Map -11,-9 to -5 and 9,11 to 5, etc.:
+            y_bf = round_to_value(y_bf)
+            # y_bf = y_bf * 2
+            # y_bf_more = np.where(y_bf < 0, y_bf-1, y_bf+1)
+            # y_bf_less = np.where(y_bf < 0, y_bf+1, y_bf-1)
+            # isthesame_bool = np.isin(y_bf, y_bf_more)
+        acc = float((_y == y_bf).sum()) / y_bf.shape[0]
+        pprint("Test set accuracy: %.2f %%" % (acc * 100), stream=log_file)
         # print f1 score
         # pprint(f1_score(_y, y_pred, average='macro', zero_division=0))
 
@@ -124,6 +158,7 @@ def exhaustive_stepwise_regression(
     return [
         filename,
         efs.best_score_,
+        acc,
         efs.best_idx_,
         efs.best_feature_names_,
         efs.estimator.__class__.__name__,
@@ -245,7 +280,7 @@ models = [
     (linear_model.Lasso(), "neg_mean_squared_error"),
     (linear_model.Perceptron(), "neg_mean_squared_error"),
     (
-        neural_network.MLPRegressor(random_state=1337, hidden_layer_sizes=(200), max_iter=2000),
+        neural_network.MLPRegressor(random_state=1337, hidden_layer_sizes=(100), max_iter=1500),
         "neg_mean_squared_error",
     ),
     (DecisionTreeClassifier(), "accuracy"),
@@ -279,7 +314,7 @@ def esr(
         for model, scoring in models:
             scoring = default_scoring if default_scoring else scoring
             results.append(exhaustive_stepwise_regression(
-                    X, y, model, dataset_name, scoring=scoring
+                    X, y, model, dataset_name, scoring=scoring, granularity=granularity
                 )
             )
 
@@ -288,6 +323,7 @@ def esr(
         columns=[
             "Dataset",
             "Score (higher is better)",
+            "Accuracy (higher is better)"
             "Best subset (indices)",
             "Best subset (corresponding names)",
             "Model",
@@ -387,6 +423,28 @@ def ftest(load_data, datasets):
 if __name__ == "__main__":
     plt.switch_backend("agg")
     # Exhaustive feature selection with 3 different granularities.
+        # 2 Means trying to guess the fine grained dimension: strongly aktive, moderately aktive, balanced, moderately reflective, strongly reflective
+    esr(
+        exhaustive_stepwise_regression,
+        load_data,
+        models,
+        datasets,
+        results,
+        granularity=2,
+        default_scoring="r2",
+    )
+    results = []
+        # 3 Means trying to guess the exact score: -11, ... ,0,... 11
+    esr(
+        exhaustive_stepwise_regression,
+        load_data,
+        models,
+        datasets,
+        results,
+        granularity=3,
+        default_scoring="r2",
+    )
+    results = []
     # 1 Means trying to guess the dimension: aktive, balanced, reflective
     esr(
         exhaustive_stepwise_regression,
@@ -397,23 +455,5 @@ if __name__ == "__main__":
         granularity=1,
         default_scoring="r2",
     )
-    # 2 Means trying to guess the fine grained dimension: strongly aktive, moderately aktive, balanced, moderately reflective, strongly reflective
-    esr(
-        exhaustive_stepwise_regression,
-        load_data,
-        models,
-        datasets,
-        results,
-        granularity=2,
-        default_scoring="r2",
-    )
-    # 3 Means trying to guess the exact score: -11, ... ,0,... 11
-    esr(
-        exhaustive_stepwise_regression,
-        load_data,
-        models,
-        datasets,
-        results,
-        granularity=3,
-        default_scoring="r2",
-    )
+
+
