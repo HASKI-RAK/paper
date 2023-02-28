@@ -38,3 +38,4 @@ def round_to_dim(y_bf):
     y_bf = np.where(y_bf <= 1, 0, y_bf)
     y_bf = np.where(y_bf == 2, 1, y_bf)
     y_bf = np.where(y_bf >= 3, 2, y_bf)
+    return y_bf
