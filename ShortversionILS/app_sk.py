@@ -11,10 +11,10 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFECV, f_regression, mutual_info_regression
 from sklearn import neural_network
-from sklearn.metrics import f1_score, accuracy_score
+from sklearn.metrics import f1_score, accuracy_score, mean_squared_error
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.base import ClassifierMixin, RegressorMixin
-from helpers import seed_everything, round_to_class, round_to_value, round_to_dim
+from helpers import seed_everything, round_to_class, round_to_value, round_to_dim, round_to_critical_cases
 import numpy as np
 
 seed_everything(1337)
@@ -134,6 +134,30 @@ def exhaustive_stepwise_regression(
 
         acc = float((y_scaled == y_pred).sum()) / y_bf.shape[0]
         pprint("Test set accuracy: %.2f %%" % (acc * 100), stream=log_file)
+        rmse = np.sqrt(mean_squared_error(y_scaled, y_pred))
+        # Count crictical cases where the prediction is off by 2 or more
+        if granularity == 2:
+            y_scaled_critical_distance = round_to_critical_cases(y_scaled)
+            y_pred_critical_distance = round_to_critical_cases(y_pred)
+            t1= y_scaled_critical_distance.copy()
+            t1[t1 != 2.5] = 0
+            t2= y_pred_critical_distance.copy()
+            t2[t2 != 1.5] = 0
+            critical_cases = np.count_nonzero(np.where(t1-t2 == 1, 1, 0))
+            t1= y_scaled_critical_distance.copy()
+            t1[t1 != 0.5] = 0
+            t2= y_pred_critical_distance.copy()
+            t2[t2 != 1.5] = 0
+            critical_cases += np.count_nonzero(np.where(t1-t2 == -1, 1, 0))
+            critical_cases_really_bad = np.count_nonzero(np.abs(y_scaled_critical_distance - y_pred_critical_distance) == 1.5)
+            critical_cases_really_really_bad = np.count_nonzero(np.abs(y_scaled_critical_distance - y_pred_critical_distance) > 1.5)
+
+            pprint('Test set critical cases: %.2f %%' % (critical_cases / y_bf.shape[0] * 100))
+            pprint("Test set critical cases: {}".format(critical_cases))
+            pprint('Test set critical cases really bad: %.2f %%' % (critical_cases_really_bad / y_bf.shape[0] * 100))
+            pprint("Test set critical cases really bad: {}".format(critical_cases_really_bad))
+            pprint('Test set critical cases really really bad: %.2f %%' % (critical_cases_really_really_bad / y_bf.shape[0] * 100))
+            pprint("Test set critical cases really really bad: {}".format(critical_cases_really_really_bad))
 
         # print model name and settings
         pprint("Model name: %s" % efs.estimator.__class__.__name__, stream=log_file)
@@ -174,6 +198,7 @@ def exhaustive_stepwise_regression(
         filename,
         efs.best_score_,
         acc,
+        rmse,
         efs.best_idx_ if efs.best_idx_ else [],
         efs.best_feature_names_ if efs.best_feature_names_ else [],
         efs.estimator.__class__.__name__,
@@ -314,6 +339,7 @@ def esr(
             "Dataset",
             "Score (higher is better)",
             "Accuracy (higher is better)",
+            "Root mean squared error (lower is better)",
             "Best subset (indices)",
             "Best subset (corresponding names)",
             "Model",
@@ -482,7 +508,7 @@ if __name__ == "__main__":
         plt.figure(plot_counter)
         plt.title(dataset)
         plt.xlabel("Granularity")
-        plt.xticks([1, 2, 3], ["Dimension (-1, 0, 1)", "Classes (-5, -3, ...)", "Exact"])
+        plt.xticks([1, 2, 3], ["Dimension (-1, 0, 1)", "Classes (s,m,b,m,s)", "Exact (-11, -9, ..., 0, ..., 11))"])
         plt.ylabel("Accuracy")
         for comb in comb_dict[dataset]:
             plt.plot(comb_dict[dataset][comb][0], comb_dict[dataset][comb][1], label=comb, linewidth=0.55)

@@ -39,3 +39,12 @@ def round_to_dim(y_bf):
     y_bf = np.where(y_bf == 2, 1, y_bf)
     y_bf = np.where(y_bf >= 3, 2, y_bf)
     return y_bf
+
+def round_to_critical_cases_classes(y_bf):
+    # they are already processed by round_to_class.
+    # make the first and laste step half of the second and second last step
+    y_bf = np.where(y_bf == 1, 0.5, y_bf)
+    y_bf = np.where(y_bf == 2, 1.5, y_bf)
+    y_bf = np.where(y_bf == 3, 2.5, y_bf)
+    y_bf = np.where(y_bf == 4, 3, y_bf)
+    return y_bf
