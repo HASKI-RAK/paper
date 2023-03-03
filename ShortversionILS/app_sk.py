@@ -14,7 +14,7 @@ from sklearn import neural_network
 from sklearn.metrics import f1_score, accuracy_score, mean_squared_error
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.base import ClassifierMixin, RegressorMixin
-from helpers import seed_everything, round_to_class, round_to_value, round_to_dim, round_to_critical_cases
+from helpers import seed_everything, round_to_class, round_to_value, round_to_dim, round_to_critical_cases_classes
 import numpy as np
 
 seed_everything(1337)
@@ -125,7 +125,6 @@ def exhaustive_stepwise_regression(
         pprint("####################")
         pprint(efs.best_feature_names_, stream=log_file)
 
-
         # Select columns in X based on the best feature names:
         x_bestfeatures = _x[np.array(efs.best_feature_names_)]
         # Sum up the values of selected features to get new y:
@@ -137,8 +136,8 @@ def exhaustive_stepwise_regression(
         rmse = np.sqrt(mean_squared_error(y_scaled, y_pred))
         # Count crictical cases where the prediction is off by 2 or more
         if granularity == 2:
-            y_scaled_critical_distance = round_to_critical_cases(y_scaled)
-            y_pred_critical_distance = round_to_critical_cases(y_pred)
+            y_scaled_critical_distance = round_to_critical_cases_classes(y_scaled)
+            y_pred_critical_distance = round_to_critical_cases_classes(y_pred)
             t1= y_scaled_critical_distance.copy()
             t1[t1 != 2.5] = 0
             t2= y_pred_critical_distance.copy()
