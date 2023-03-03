@@ -92,6 +92,17 @@ def granularify(y_sub_pred, _y_true, granularity):
 def exhaustive_stepwise_regression(
     _x, _y, model, filename, cv=2, scoring="accuracy", granularity=1
 ):
+    """
+        Exhaustive Feature Selection
+        :param _x: training data
+        :param _y: training labels
+        :param model: model to use
+        :param filename: name of file to save results to
+        :param cv: number of cross validation folds
+        :param scoring: metric to use for scoring
+        :param granularity: granularity to use for scoring (1: dimension, 2: class, 3: value)
+        :return: accuracy
+    """
     acc = -1
     global score
     score = -1
