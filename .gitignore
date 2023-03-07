@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 
-ShortversionILS/plots
-ShortversionILS/plots_numerical
-ShortversionILS/Scripts
-ShortversionILS/pyvenv.cfg
+ShortFormILS/plots
+ShortFormILS/plots_numerical
+ShortFormILS/Scripts
+ShortFormILS/pyvenv.cfg

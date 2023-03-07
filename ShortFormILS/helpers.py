@@ -33,6 +33,8 @@ def round_to_value(y_bf):
     y_bf = np.where(y_bf == 11, 5, y_bf)
     y_bf = np.where(y_bf == 9, 5, y_bf)
     return y_bf
+# rount_to_value in excel formula:
+# =WENN(L2=-3; -1; WENN(A1=-7; -3; WENN(A1=-5; -3; WENN(A1=-11; -5; WENN(A1=-9; -5; WENN(A1=3; 1; WENN(A1=7; 3; WENN(A1=5; 3; WENN(A1=11; 5; WENN(A1=9; 5; A1))))))))))
 
 def round_to_dim(y_bf):
     y_bf = np.where(y_bf <= 1, 0, y_bf)
