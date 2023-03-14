@@ -8,13 +8,14 @@ import numpy as np
 def seed_everything(seed=42):
     """
     Seed everything.
-    """   
+    """
     random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
 
+
 def round_to_class(y_bf):
-    """ Round to class. """
+    """Round to class."""
     y_bf = np.where(y_bf == -5, 0, y_bf)
     y_bf = np.where(y_bf == 1, 2, y_bf)
     y_bf = np.where(y_bf == -1, 2, y_bf)
@@ -23,8 +24,9 @@ def round_to_class(y_bf):
     y_bf = np.where(y_bf == 5, 4, y_bf)
     return y_bf
 
+
 def round_to_value(y_bf):
-    """ Round to value classes. """
+    """Round to value classes."""
     y_bf = np.where(y_bf == -3, -1, y_bf)
     y_bf = np.where(y_bf == -7, -3, y_bf)
     y_bf = np.where(y_bf == -5, -3, y_bf)
@@ -37,15 +39,17 @@ def round_to_value(y_bf):
     y_bf = np.where(y_bf == 9, 5, y_bf)
     return y_bf
 
+
 def round_to_dim(y_bf):
-    """ Round to dim classes. """
+    """Round to dim classes."""
     y_bf = np.where(y_bf <= 1, 0, y_bf)
     y_bf = np.where(y_bf == 2, 1, y_bf)
     y_bf = np.where(y_bf >= 3, 2, y_bf)
     return y_bf
 
+
 def round_to_critical_cases_classes(y_bf):
-    """ Round to critical cases classes. """
+    """Round to critical cases classes."""
     y_bf = np.where(y_bf == 1, 0.5, y_bf)
     y_bf = np.where(y_bf == 2, 1.5, y_bf)
     y_bf = np.where(y_bf == 3, 2.5, y_bf)
@@ -53,9 +57,8 @@ def round_to_critical_cases_classes(y_bf):
     return y_bf
 
 
-
 def plot_result(metric_dict, regressorname, filename):
-    """ Plot the results. """
+    """Plot the results."""
     global plot_counter
     plot_counter += 1
     plt.figure(plot_counter)
@@ -88,7 +91,7 @@ def plot_result(metric_dict, regressorname, filename):
     plt.xticks(
         k_feat, [str(metric_dict[k]["feature_idx"]) for k in k_feat], rotation=70
     )
-    # plot zoom out 
+    # plot zoom out
     plt.ylim([min(lower) - 0.1, max(upper) + 0.1])
     plt.subplots_adjust(bottom=0.3)
     # create folder if not exists
