@@ -5,74 +5,36 @@ from pprint import pprint
 from sklearn import linear_model
 from mlxtend.feature_selection import ExhaustiveFeatureSelector as EFS
 from sklearn.decomposition import PCA
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import RFECV, f_regression, mutual_info_regression
+from sklearn.feature_selection import RFECV
 from sklearn import neural_network
 from sklearn.metrics import f1_score, accuracy_score, mean_squared_error
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.base import ClassifierMixin, RegressorMixin
-from helpers import seed_everything, round_to_class, round_to_value, round_to_dim, round_to_critical_cases_classes
+from helpers import seed_everything, round_to_class, round_to_value, round_to_dim, round_to_critical_cases_classes, plot_result
 import numpy as np
 
 seed_everything(1337)
 plot_counter = 0
-
-
-def plot_result(metric_dict, regressorname, filename):
-    # new plot
-    global plot_counter
-    plot_counter += 1
-    plt.figure(plot_counter)
-    # sort based on avg_score
-    # only take subset of size n with highest accuracy
-    k_feat = sorted(
-        metric_dict.keys(), key=lambda k: metric_dict[k]["avg_score"], reverse=True
-    )[:10]
-    # sort again based on index
-    k_feat = sorted(k_feat)
-    avg = [metric_dict[k]["avg_score"] for k in k_feat]
-
-    upper, lower = [], []
-    for k in k_feat:
-        upper.append(metric_dict[k]["avg_score"] + metric_dict[k]["std_dev"])
-        lower.append(metric_dict[k]["avg_score"] - metric_dict[k]["std_dev"])
-
-    plt.fill_between(k_feat, upper, lower, alpha=0.2, color="blue", lw=1)
-
-    plt.plot(k_feat, avg, color="blue", marker="o", markersize=3)
-    plt.ylabel("Accuracy +/- Standard Deviation")
-    plt.xlabel("Best subset (k)")
-    feature_min = len(metric_dict[k_feat[0]]["feature_idx"])
-    feature_max = len(metric_dict[k_feat[-1]]["feature_idx"])
-    plt.title(
-        "Exhaustive Feature Selection (min {} features, max {} features)".format(
-            feature_min, feature_max
-        )
-    )
-    plt.xticks(
-        k_feat, [str(metric_dict[k]["feature_idx"]) for k in k_feat], rotation=70
-    )
-    # plot zoom out 
-    plt.ylim([min(lower) - 0.1, max(upper) + 0.1])
-    plt.subplots_adjust(bottom=0.3)
-    # create folder if not exists
-    if not os.path.exists("plots"):
-        os.makedirs("plots")
-    # Save the plot
-    plt.savefig("plots/{}_efs_{}_.png".format(filename, regressorname), dpi=300)
-    plt.close(plot_counter)
-
 # metric score mappping
 metric_dict = {
     "accuracy": accuracy_score,
     "f1": f1_score
 }
 
-# We need a custom scorer in order to compensate the relation between 11 features summed and 5 features summed giving y
-def custom_scorer(estimator: ClassifierMixin | RegressorMixin, x, _y, scoring, granularity=1):
+# Regression models
+regression_models = [
+    (linear_model.LinearRegression(positive=True), "neg_root_mean_squared_error"),
+    (linear_model.ElasticNet(), "neg_mean_squared_error"),
+        (linear_model.Ridge(), "neg_mean_squared_error"),
+        (linear_model.Lasso(), "neg_mean_squared_error"),
+        (linear_model.Perceptron(), "neg_mean_squared_error"),
+        (neural_network.MLPRegressor(random_state=1337, hidden_layer_sizes=(100), max_iter=500), "neg_mean_squared_error"),
+]
+models = [
+    (linear_model.LinearRegression(positive=True), "accuracy")
+]
+
+
+def custom_scorer(_, x, _y, scoring, granularity=1):
+    """We need a custom scorer in order to compensate the relation between 11 features summed and 5 features summed giving y"""
     y_pred = x.sum(axis=1)
     y_pred, y = granularify(y_pred, _y, granularity)    
     score = metric_dict.get(scoring, accuracy_score)(y, y_pred)
@@ -90,7 +52,7 @@ def granularify(y_sub_pred, _y_true, granularity):
     return y_sub_pred,y_true_scaled
 
 def exhaustive_stepwise_regression(
-    _x, _y, model, filename, cv=2, scoring="accuracy", granularity=1
+    _x, _y, model, filename, cv=2, scoring="accuracy", granularity=1, do_print_critical=False
 ):
     """
         Exhaustive Feature Selection
@@ -147,28 +109,8 @@ def exhaustive_stepwise_regression(
         pprint("Test set accuracy: %.2f %%" % (acc * 100), stream=log_file)
         rmse = np.sqrt(mean_squared_error(y_scaled, y_pred))
         # Count crictical cases where the prediction is off by 2 or more
-        if granularity == 2:
-            y_scaled_critical_distance = round_to_critical_cases_classes(y_scaled)
-            y_pred_critical_distance = round_to_critical_cases_classes(y_pred)
-            t1= y_scaled_critical_distance.copy()
-            t1[t1 != 2.5] = 0
-            t2= y_pred_critical_distance.copy()
-            t2[t2 != 1.5] = 0
-            critical_cases = np.count_nonzero(np.where(t1-t2 == 1, 1, 0))
-            t1= y_scaled_critical_distance.copy()
-            t1[t1 != 0.5] = 0
-            t2= y_pred_critical_distance.copy()
-            t2[t2 != 1.5] = 0
-            critical_cases += np.count_nonzero(np.where(t1-t2 == -1, 1, 0))
-            critical_cases_really_bad = np.count_nonzero(np.abs(y_scaled_critical_distance - y_pred_critical_distance) == 1.5)
-            critical_cases_really_really_bad = np.count_nonzero(np.abs(y_scaled_critical_distance - y_pred_critical_distance) > 1.5)
-
-            pprint('Test set critical cases: %.2f %%' % (critical_cases / y_bf.shape[0] * 100))
-            pprint("Test set critical cases: {}".format(critical_cases))
-            pprint('Test set critical cases really bad: %.2f %%' % (critical_cases_really_bad / y_bf.shape[0] * 100))
-            pprint("Test set critical cases really bad: {}".format(critical_cases_really_bad))
-            pprint('Test set critical cases really really bad: %.2f %%' % (critical_cases_really_really_bad / y_bf.shape[0] * 100))
-            pprint("Test set critical cases really really bad: {}".format(critical_cases_really_really_bad))
+        if do_print_critical:
+            print_critical_cases(granularity, y_bf, y_pred, y_scaled)
 
         # print model name and settings
         pprint("Model name: %s" % efs.estimator.__class__.__name__, stream=log_file)
@@ -217,6 +159,30 @@ def exhaustive_stepwise_regression(
         granularity,
         results_list
     ]
+
+def print_critical_cases(granularity, y_bf, y_pred, y_scaled):
+    if granularity == 2:
+        y_scaled_critical_distance = round_to_critical_cases_classes(y_scaled)
+        y_pred_critical_distance = round_to_critical_cases_classes(y_pred)
+        t1= y_scaled_critical_distance.copy()
+        t1[t1 != 2.5] = 0
+        t2= y_pred_critical_distance.copy()
+        t2[t2 != 1.5] = 0
+        critical_cases = np.count_nonzero(np.where(t1-t2 == 1, 1, 0))
+        t1= y_scaled_critical_distance.copy()
+        t1[t1 != 0.5] = 0
+        t2= y_pred_critical_distance.copy()
+        t2[t2 != 1.5] = 0
+        critical_cases += np.count_nonzero(np.where(t1-t2 == -1, 1, 0))
+        critical_cases_really_bad = np.count_nonzero(np.abs(y_scaled_critical_distance - y_pred_critical_distance) == 1.5)
+        critical_cases_really_really_bad = np.count_nonzero(np.abs(y_scaled_critical_distance - y_pred_critical_distance) > 1.5)
+
+        pprint('Test set critical cases: %.2f %%' % (critical_cases / y_bf.shape[0] * 100))
+        pprint("Test set critical cases: {}".format(critical_cases))
+        pprint('Test set critical cases really bad: %.2f %%' % (critical_cases_really_bad / y_bf.shape[0] * 100))
+        pprint("Test set critical cases really bad: {}".format(critical_cases_really_bad))
+        pprint('Test set critical cases really really bad: %.2f %%' % (critical_cases_really_really_bad / y_bf.shape[0] * 100))
+        pprint("Test set critical cases really really bad: {}".format(critical_cases_really_really_bad))
 
 
 def recursive_feature_elimination(
@@ -269,7 +235,7 @@ def recursive_feature_elimination(
             "Best subset (corresponding names): {}".format(_x.columns[rfecv.support_]),
             stream=log_file,
         )
-    # plot_result(rfecv.grid_scores_, rfecv.estimator.__class__.__name__, filename)
+    plot_result(rfecv.grid_scores_, rfecv.estimator.__class__.__name__, filename)
 
     return [
         filename,
@@ -293,27 +259,6 @@ def load_data(name="D1SMRC", granularity=1):
     # Select the last column
     y = df.iloc[:, -3]
     return X, y, n
-
-
-# Regression models
-regression_models = [
-    (linear_model.LinearRegression(positive=True), "neg_root_mean_squared_error"),
-    (linear_model.ElasticNet(), "neg_mean_squared_error"),
-        (linear_model.Ridge(), "neg_mean_squared_error"),
-        (linear_model.Lasso(), "neg_mean_squared_error"),
-        (linear_model.Perceptron(), "neg_mean_squared_error"),
-        (neural_network.MLPRegressor(random_state=1337, hidden_layer_sizes=(100), max_iter=500), "neg_mean_squared_error"),
-]
-models = [
-    (linear_model.LinearRegression(positive=True), "accuracy"),
-    # (DecisionTreeClassifier(), "accuracy"),
-    # (RandomForestClassifier(), "accuracy"),
-    # (KNeighborsClassifier(2), "accuracy"),
-    # (SVC(kernel="linear"), "accuracy"),
-    # (linear_model.PassiveAggressiveClassifier(), "accuracy"),
-    # (linear_model.RidgeClassifier(), "accuracy"),
-    # (linear_model.SGDClassifier(), "accuracy"),
-]
 
 datasets = ["D1SMRC", "D2SMRC", "D3SMRC", "D4SMRC"]
 results = []
@@ -419,35 +364,6 @@ def pca(load_data, datasets):
     df.to_csv("plots/pca_results.csv", index=False)
 
 
-def ftest(load_data, datasets):
-    results = []
-    for dataset_name in datasets:
-        X, y, _ = load_data(dataset_name)
-        # X shape:
-        pprint(X.shape)
-        f_test, _ = f_regression(X, y)
-        f_test /= np.max(f_test)
-        # mutual information
-        mi = mutual_info_regression(X, y)
-        mi /= np.max(mi)
-        # plot the results
-        plt.matshow(np.c_[f_test, mi], cmap=plt.cm.Blues, vmin=0, vmax=1)
-        plt.yticks(range(X.shape[1]), range(X.shape[1]))
-        plt.xticks([0, 1], ["F-test", "Mutual Information"])
-        plt.colorbar()
-        # plt.figure(figsize=(15, 5))
-        # for i in range(10):
-        #     plt.subplot(1, 11, i + 1)
-        #     plt.tight_layout()
-        #     plt.scatter(X.iloc[:, i+1], y, s=10)
-        #     plt.xlabel("$x_{}$".format(i + 1), fontsize=14)
-        #     plt.ylabel("F-test={:.2f}, MI={:.2f}".format(f_test[i], mi[i]), fontsize=16)
-        plt.savefig("plots/ftest_{}.png".format(dataset_name))
-        results.append([dataset_name, f_test])
-    df = pd.DataFrame(results, columns=["Dataset", "F-test"])
-    df.to_csv("plots/ftest_results.csv", index=False)
-
-
 if __name__ == "__main__":
     # plt.switch_backend("agg")
     total_results = []
@@ -509,7 +425,6 @@ if __name__ == "__main__":
 
     # Remove the combinations that are not in all granularities
     comb_dict = {dataset: {comb: comb_dict[dataset][comb] for comb in comb_dict[dataset] if len(comb_dict[dataset][comb][0]) >= 2} for dataset in comb_dict}
-    # comb_dict = comb_dict_copy
     # Plotting comb_dict with subplot for every entry in comb_dict
     plot_counter = 0
     # Make plot landscape mode
