@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
+pyvenv.cfg
 ShortFormILS/plots
 ShortFormILS/plots_numerical
 ShortFormILS/Scripts
