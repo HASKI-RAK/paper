@@ -1,0 +1,1 @@
+tqdm>=4.66.5  # Used in [core/experiment.py](core/experiment.py) for progress bars

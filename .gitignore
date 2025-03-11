@@ -133,3 +133,4 @@ ShortFormILS/plots
 ShortFormILS/plots_numerical
 ShortFormILS/Scripts
 ShortFormILS/pyvenv.cfg
+.vscode/settings.json
