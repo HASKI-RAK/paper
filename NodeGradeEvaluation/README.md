@@ -11,11 +11,15 @@ The repository is structured as follows:
 
 ### Benchmark
 In the folder `benchmark/` you will find the code to download the datasets and run the evaluation of NodeGrade.
+To setup NodeGrade, plase install the application according to the repository [NodeGrade](https://github.com/HASKI-RAK/NodeGrade).
+The graph confugrations used are stored in the `benchmark/graphs/` folder. Upload them in the web interface of NodeGrade.
 Refer to the [README](benchmark/README.md) in the `benchmark/` folder for more information.
 
 ### Interviews
 In the folder `interviews/` you will find the qualitative interviews with students.
 
+## Issues
+If you have any questions or issues, please open an issue in the repository. We will try to help you as soon as possible.
 
 ## Citation
 If you use this code or the datasets in your research, please cite the following paper:
