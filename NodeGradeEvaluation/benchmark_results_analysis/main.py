@@ -380,6 +380,7 @@ actual_vs_fitted_heatmaps(
     y_col="model_score_rounded",
     x_col="human_score",
     absolute = False,
+    no_title=True,
     vmin=0,
     vmax=20,
     diagonal_color='green',
@@ -400,7 +401,8 @@ actual_vs_fitted_plots(
     y_label = 'Model Score',
     layout = "horizontal", 
     group_by='question_id_2',
-    legend_title="Question ID",
+    legend_title=" ",#"Question ID",
+    no_title=True, # False
     include_aliases = ['os_en', 'os_de'],
     output_filepath_prefix = './exports/scatter_contin_',
     cmap_str = "Dark2" 
@@ -425,11 +427,12 @@ actual_vs_fitted_plots(
     evaluation_data = evaluation_data, 
     x_col = 'human_score',
     y_col = 'model_score_rounded',
-    x_label = 'Human Score (original)',
-    y_label = 'Model Score (scaled to the range of the human score and discretized)',
+    x_label = 'Human Score',# (original)',
+    y_label = 'Model Score', #(scaled to the range of the human score and discretized)',
     layout = "horizontal", 
     group_by='question_id_2',
     legend_title="Question ID",
+    no_title=True,
     include_aliases = ['os_en', 'os_de'],
     output_filepath_prefix = './exports/scatter_discr_',
     cmap_str = "Dark2" 
@@ -672,13 +675,13 @@ for value in distinct_human_scores:
     value_label = None
     if int(value) == 0:
         dummy = (df['human_score'] != value).astype(int)
-        value_label = 'incorrect'
+        value_label = 'Incorrect'
     if int(value) == 1:
         dummy = (df['human_score'] != value).astype(int)
-        value_label = 'partially correct'
+        value_label = 'Partially Correct'
     elif int(value) == 2:
         dummy = (df['human_score'] == value).astype(int)
-        value_label = 'correct'
+        value_label = 'Correct'
 
     # calculate roc auc
     if int(value) in [0, 2]: 
@@ -694,14 +697,14 @@ for value in distinct_human_scores:
     fpr, tpr, thresholds = roc_curve(dummy, model_score_original)
 
     # plot der ROC-Kurve
-    plt.plot(fpr, tpr, label=f'human label: {value_label} (AUC = {roc_auc:.3f})')
+    plt.plot(fpr, tpr, label=f'{value_label} (AUC = {roc_auc:.2f})')
 
 # Plot
 filename = 'engsaf_roc_curves'
 plt.plot([0, 1], [0, 1], 'k--', label='Random Guessing') 
 plt.xlabel('False Positive Rate (FPR)')
 plt.ylabel('True Positive Rate (TPR)')
-plt.title('ROC Curves for each Class in the dataset EngSAF')
+plt.title('')
 plt.legend(loc='lower right')
 plt.grid()
 plt.savefig(f"./exports/{filename}.png")
@@ -1131,7 +1134,7 @@ plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {formal_results[alias]['ROC_AUC']:.2
 plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
 plt.xlabel('False Positive Rate (FPR)')
 plt.ylabel('True Positive Rate (TPR)')
-plt.title(f'ROC Curve for Dataset: {alias}')
+plt.title('')#(f'ROC Curve for Dataset: {alias}')
 plt.legend(loc='best')
 plt.grid()
 filename = 'SemEval_roc_curve'

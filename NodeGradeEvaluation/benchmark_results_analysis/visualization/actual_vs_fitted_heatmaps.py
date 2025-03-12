@@ -14,6 +14,7 @@ def actual_vs_fitted_heatmaps(
     vmin=0,
     vmax=20,
     absolute=False,
+    no_title=False,
     diagonal_color="black",
     debug=False,
     include_aliases: Optional[List[str]] = None,
@@ -164,7 +165,7 @@ def actual_vs_fitted_heatmaps(
         detailed_name = evaluation_data.datasets_metadata[alias].get('detailed_name', alias)
         ax.set_title(f"Actual-vs-Fitted Heatmap for {detailed_name}")
         ax.set_xlabel('Human Score')
-        ax.set_ylabel('Model Score (Rounded)')
+        ax.set_ylabel('Model Score')
         ax.invert_yaxis()  
         ax.tick_params(axis='x', rotation=45)
         ax.tick_params(axis='y', rotation=0)
@@ -191,10 +192,14 @@ def actual_vs_fitted_heatmaps(
                 if j < len(heatmap_data_to_plot.columns):
                     ax_single.add_patch(plt.Rectangle((j, j), 1, 1, fill=False, 
                                                       edgecolor=diagonal_color, lw=2))
-            
-            ax_single.set_title(f"Actual-vs-Fitted Heatmap for {detailed_name}")
+
+            if no_title:
+                ax_single.set_title(f"")
+            else:
+                ax_single.set_title(f"Actual-vs-Fitted Heatmap for {detailed_name}")
+                
             ax_single.set_xlabel('Human Score')
-            ax_single.set_ylabel('Model Score (Rounded)')
+            ax_single.set_ylabel('Model Score')
             ax_single.invert_yaxis()  
             ax_single.tick_params(axis='x', rotation=45)
             ax_single.tick_params(axis='y', rotation=0)

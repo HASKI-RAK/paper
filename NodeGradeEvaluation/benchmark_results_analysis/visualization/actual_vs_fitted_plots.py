@@ -14,6 +14,7 @@ def actual_vs_fitted_plots(
     layout: str = "horizontal", 
     dot_color: str = "#2C3E50",
     cmap_str: str = 'cividis',
+    no_title=False,
     group_by: Optional[str] = None,
     legend_title: Optional[str] = None,
     include_aliases: Optional[List[str]] = None,
@@ -119,7 +120,7 @@ def actual_vs_fitted_plots(
             ax.legend(title=legend_title if legend_title else group_by)
 
         # Set labels and title
-        ax.set_title(f"Actual-vs-Fitted-Plot {metadata['detailed_name']}")
+        ax.set_title(f"Actual-vs-Fitted-Plot {metadata['detailed_name']}")    
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
 
@@ -137,7 +138,11 @@ def actual_vs_fitted_plots(
                 ax_single.scatter(data[x_col], data[y_col], alpha=0.6, color=dot_color)
                 ax_single.legend(title=legend_title if legend_title else group_by)
 
-            ax_single.set_title(f"Actual-vs-Fitted-Plot {metadata['detailed_name']}")
+            if no_title:
+                ax_single.set_title("")            
+            else:
+                ax_single.set_title(f"Actual-vs-Fitted-Plot {metadata['detailed_name']}")
+                
             ax_single.set_xlabel(x_label)
             ax_single.set_ylabel(y_label)
 
