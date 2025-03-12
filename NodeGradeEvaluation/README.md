@@ -5,8 +5,9 @@ NodeGrade tries to provide a suitable solution for the problem of time-intensive
 The repository is structured as follows:
 ```
 /
-├── benchmark/                 # Code to download the datasets and run the evaluation of NodeGrade
-├── interviews/                # Qualitative interviews with students
+├── benchmark/                  # Code to download the datasets and run the evaluation of NodeGrade
+├── benchmark_results_analysis/ # Code for reproducing our analysis of benchmark results presented in the paper (including all visualizations) 
+├── interviews/                 # Qualitative interviews with students
 ```
 
 ### Benchmark

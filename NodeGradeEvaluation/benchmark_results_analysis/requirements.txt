@@ -1,0 +1,12 @@
+pandas==2.2.3
+loguru==0.7.3
+matplotlib==3.7.3
+webcolors==1.11.1
+seaborn==0.13.2
+numpy==1.26.4
+scikit-learn==1.6.0
+tikzplotlib==0.10.1
+Jinja2==3.1.5
+# following packages only neccesary if you want to exevute the .ipynb file via nbconvert
+nbconvert==7.16.6
+ipykernel==6.29.5
