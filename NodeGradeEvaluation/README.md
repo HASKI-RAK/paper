@@ -19,7 +19,7 @@ Refer to the [README](benchmark/README.md) in the `benchmark/` folder for more i
 ### Analysis of Benchmarking Results
 In the folder `benchmark_results_analysis/` you can access our source code that we used to anaylse the benchmark results in detail.
 The repository is structured in a way that is maximizing transparency and reproducibility.
-Pease consult the corresponding [README](benchmark_results_analysis/README.md) for furhter information. 
+Pease consult the corresponding [README](benchmark_results_analysis/README.md) for further information. 
 
 ### Interviews
 In the folder `interviews/` you will find the qualitative interviews with students.
