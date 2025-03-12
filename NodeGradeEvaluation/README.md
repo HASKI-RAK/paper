@@ -16,6 +16,11 @@ To setup NodeGrade, plase install the application according to the repository [N
 The graph confugrations used are stored in the `benchmark/graphs/` folder. Upload them in the web interface of NodeGrade.
 Refer to the [README](benchmark/README.md) in the `benchmark/` folder for more information.
 
+### Analysis of Benchmarking Results
+In the folder `benchmark_results_analysis/` you can access our source code that we used to anaylse the benchmark results in detail.
+The repository is structured in a way that is maximizing transparency and reproducibility.
+Pease consult the corresponding [README](benchmark_results_analysis/README.md) for furhter information. 
+
 ### Interviews
 In the folder `interviews/` you will find the qualitative interviews with students.
 
