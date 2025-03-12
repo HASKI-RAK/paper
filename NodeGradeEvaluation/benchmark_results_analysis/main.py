@@ -401,7 +401,7 @@ actual_vs_fitted_plots(
     y_label = 'Model Score',
     layout = "horizontal", 
     group_by='question_id_2',
-    legend_title=" ",#"Question ID",
+    legend_title="Question ID",
     no_title=True, # False
     include_aliases = ['os_en', 'os_de'],
     output_filepath_prefix = './exports/scatter_contin_',
